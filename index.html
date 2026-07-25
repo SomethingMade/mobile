@@ -211,7 +211,7 @@ const RESTAURANTS = [
   },
 ];
 
-const money = n => `$${n.toFixed(2)}`;
+const money = n => `R${n.toFixed(2)}`;
 
 /* ---------------- icons ---------------- */
 const ICONS = {
@@ -227,6 +227,7 @@ const ICONS = {
   plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
   minus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>`,
   heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+  heartFilled: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
   flame: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.4-.7-2-1-3 1.7.5 3.5 2.2 3.5 5a5 5 0 0 1-10 0c0-2.2 1.3-3.5 2-5 .3 1 .4 2 .5 3z"/></svg>`,
 };
@@ -240,6 +241,9 @@ let state = {
   item: null,
   qty: 1,
   cart: [],
+  searchQuery: "",
+  favorites: [],
+  ordersPlaced: 0,
 };
 
 function setState(patch){ state = { ...state, ...patch }; render(); }
@@ -251,12 +255,29 @@ function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*c.price,0); }
 function goHome(){ setState({ screen: "home" }); }
 function goRestaurant(r){ setState({ screen: "restaurant", restaurant: r }); window.scrollTo(0,0); }
 function goItem(it){ setState({ screen: "item", item: it, qty: 1 }); window.scrollTo(0,0); }
+function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item: it, qty: 1 }); window.scrollTo(0,0); }
 function goCart(){ setState({ screen: "cart" }); window.scrollTo(0,0); }
 function goCheckout(){ setState({ screen: "checkout" }); window.scrollTo(0,0); }
+function goSearch(){ setState({ screen: "search" }); window.scrollTo(0,0); }
+function goProfile(){ setState({ screen: "profile" }); window.scrollTo(0,0); }
 function backFromRestaurant(){ setState({ screen: "home" }); }
-function backFromItem(){ setState({ screen: "restaurant" }); }
+function backFromItem(){ setState({ screen: state.restaurant ? "restaurant" : "search" }); }
 function backFromCart(){ setState({ screen: state.restaurant ? "restaurant" : "home" }); }
 function backFromCheckout(){ setState({ screen: "cart" }); }
+
+function updateSearchQuery(v){ setState({ searchQuery: v }); }
+
+function toggleFavorite(id, event){
+  if (event) event.stopPropagation();
+  const favorites = state.favorites.includes(id)
+    ? state.favorites.filter(f => f !== id)
+    : [...state.favorites, id];
+  setState({ favorites });
+}
+
+function logOut(){
+  setState({ screen: "home", cart: [], favorites: [], ordersPlaced: 0, searchQuery: "", activeCat: "all" });
+}
 
 function changeQty(delta){ setState({ qty: Math.max(1, state.qty + delta) }); }
 
@@ -279,24 +300,36 @@ function changeCartQty(id, delta){
   setState({ cart });
 }
 
-function placeOrder(){ setState({ cart: [], screen: "tracking" }); window.scrollTo(0,0); }
+function placeOrder(){ setState({ cart: [], screen: "tracking", ordersPlaced: state.ordersPlaced + 1 }); window.scrollTo(0,0); }
 
 /* ---------------- render ---------------- */
 function render(){
+  const active = document.activeElement;
+  const focusId = active && active.id;
+  const selStart = focusId && typeof active.selectionStart === "number" ? active.selectionStart : null;
+
   renderScreen();
   renderNav();
+
+  if (focusId) {
+    const el = document.getElementById(focusId);
+    if (el && el.focus) {
+      el.focus();
+      if (selStart != null && el.setSelectionRange) el.setSelectionRange(selStart, selStart);
+    }
+  }
 }
 
 function renderNav(){
   const nav = document.getElementById("bottomnav");
-  if (!["home","restaurant","item"].includes(state.screen)) { nav.style.display = "none"; return; }
+  if (!["home","restaurant","item","search","profile"].includes(state.screen)) { nav.style.display = "none"; return; }
   nav.style.display = "flex";
   const cc = cartCount();
   nav.innerHTML = `
     <button class="navbtn ${state.screen==='home'?'active':''}" onclick="goHome()">
       ${icon('home')}<span>Home</span>
     </button>
-    <button class="navbtn" onclick="goHome()">
+    <button class="navbtn ${state.screen==='search'?'active':''}" onclick="goSearch()">
       ${icon('search')}<span>Search</span>
     </button>
     <button class="navbtn" onclick="goCart()">
@@ -306,7 +339,7 @@ function renderNav(){
       </div>
       <span>Cart</span>
     </button>
-    <button class="navbtn" onclick="goHome()">
+    <button class="navbtn ${state.screen==='profile'?'active':''}" onclick="goProfile()">
       ${icon('user')}<span>Profile</span>
     </button>
   `;
@@ -320,6 +353,8 @@ function renderScreen(){
   if (state.screen === "cart") return el.innerHTML = cartHTML();
   if (state.screen === "checkout") return el.innerHTML = checkoutHTML();
   if (state.screen === "tracking") return el.innerHTML = trackingHTML();
+  if (state.screen === "search") return el.innerHTML = searchHTML();
+  if (state.screen === "profile") return el.innerHTML = profileHTML();
 }
 
 function homeHTML(){
@@ -340,10 +375,10 @@ function homeHTML(){
     <h1 class="disp" style="font-size:32px;color:var(--ink);line-height:1.2;margin:0 0 20px;">What are you<br/>craving?</h1>
 
     <!-- Search -->
-    <div style="display:flex;align-items:center;gap:12px;background:var(--cream);border-radius:16px;padding:14px 18px;margin-bottom:24px;box-shadow:var(--shadow);">
+    <button class="press" onclick="goSearch()" style="display:flex;align-items:center;gap:12px;background:var(--cream);border:none;border-radius:16px;padding:14px 18px;margin-bottom:24px;box-shadow:var(--shadow);width:100%;cursor:pointer;text-align:left;">
       ${icon('search','var(--muted)',20)}
       <span style="color:var(--muted);font-size:15px;font-weight:500;">Search restaurants, dishes...</span>
-    </div>
+    </button>
 
     <!-- Categories -->
     <div style="display:flex;gap:12px;overflow-x:auto;margin-bottom:28px;padding-bottom:4px;scrollbar-width:none;">
@@ -373,7 +408,7 @@ function homeHTML(){
         <button class="rcard press" onclick='goRestaurant(${JSON.stringify(r).replace(/'/g,"&apos;")})'>
           <div class="rcard-img-wrap">
             <img src="${r.image}" class="rcard-img" alt="${r.name}" />
-            <div class="fav-btn press">${icon('heart', 'currentColor', 18)}</div>
+            <div class="fav-btn press" onclick="toggleFavorite(${r.id}, event)" style="color:${state.favorites.includes(r.id) ? 'var(--ember)' : 'var(--muted2)'};">${icon(state.favorites.includes(r.id) ? 'heartFilled' : 'heart', 'currentColor', 18)}</div>
           </div>
           <div class="rcard-info">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -402,7 +437,7 @@ function restaurantHTML(r){
       <div class="hero-overlay"></div>
       <div style="position:absolute;top:20px;left:20px;right:20px;display:flex;justify-content:space-between;">
         <button class="backbtn press" onclick="backFromRestaurant()">${icon('chevleft',null,24)}</button>
-        <button class="backbtn press">${icon('search',null,20)}</button>
+        <button class="backbtn press" onclick="goSearch()">${icon('search',null,20)}</button>
       </div>
     </div>
     
@@ -600,6 +635,162 @@ function trackingHTML(){
     </div>
 
     <button class="bigbtn dark press" style="width:100%;" onclick="goHome()">Back to Home</button>
+  </div>`;
+}
+
+function searchHTML(){
+  const q = (state.searchQuery || "").trim().toLowerCase();
+  let restaurantResults = [];
+  let dishResults = [];
+
+  if (q) {
+    restaurantResults = RESTAURANTS.filter(r =>
+      r.name.toLowerCase().includes(q) || r.cuisine.toLowerCase().includes(q)
+    );
+    RESTAURANTS.forEach(r => {
+      r.items.forEach(it => {
+        if (it.name.toLowerCase().includes(q) || it.desc.toLowerCase().includes(q)) {
+          dishResults.push({ restaurant: r, item: it });
+        }
+      });
+    });
+  }
+
+  const hasResults = restaurantResults.length > 0 || dishResults.length > 0;
+  const safeQuery = state.searchQuery.replace(/"/g, "&quot;");
+
+  return `
+  <div style="padding:24px 20px 100px;min-height:100%;">
+    <h1 class="disp" style="font-size:24px;color:var(--ink);margin:0 0 20px;">Search</h1>
+
+    <div style="display:flex;align-items:center;gap:12px;background:var(--cream);border-radius:16px;padding:14px 18px;margin-bottom:24px;box-shadow:var(--shadow);">
+      ${icon('search','var(--muted)',20)}
+      <input
+        id="searchInput"
+        type="text"
+        value="${safeQuery}"
+        oninput="updateSearchQuery(this.value)"
+        placeholder="Search restaurants, dishes..."
+        autofocus
+        style="border:none;outline:none;background:transparent;font-size:15px;font-weight:500;color:var(--ink);flex:1;font-family:inherit;min-width:0;"
+      />
+    </div>
+
+    ${!q ? `
+      <div style="text-align:center;margin-top:80px;color:var(--muted);">
+        <div style="opacity:0.3;margin-bottom:16px;display:flex;justify-content:center;">${icon('search',null,64)}</div>
+        <div style="font-size:15px;font-weight:600;">Find restaurants and dishes</div>
+        <div style="font-size:13px;margin-top:6px;">Try "noodles", "bowl", or a restaurant name.</div>
+      </div>
+    ` : !hasResults ? `
+      <div style="text-align:center;margin-top:80px;color:var(--muted);">
+        <div style="font-size:16px;font-weight:600;">No results for "${safeQuery}"</div>
+        <div style="font-size:14px;margin-top:8px;">Try a different search term.</div>
+      </div>
+    ` : `
+      ${restaurantResults.length ? `
+        <div class="section">
+          <div class="title">Restaurants</div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            ${restaurantResults.map(r => `
+              <button class="rcard press" onclick='goRestaurant(${JSON.stringify(r).replace(/'/g,"&apos;")})'>
+                <div class="rcard-img-wrap">
+                  <img src="${r.image}" class="rcard-img" alt="${r.name}" />
+                </div>
+                <div class="rcard-info">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="font-weight:700;font-size:16px;color:var(--ink);">${r.name}</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--ink);">${icon('star','#F59E0B',14)} ${r.rating}</span>
+                  </div>
+                  <div style="font-size:13px;color:var(--muted);font-weight:500;">${r.cuisine}</div>
+                </div>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+
+      ${dishResults.length ? `
+        <div class="section">
+          <div class="title">Dishes</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            ${dishResults.map(({restaurant, item}) => `
+              <button class="mitem press" onclick='goItemFromSearch(${JSON.stringify(restaurant).replace(/'/g,"&apos;")}, ${JSON.stringify(item).replace(/'/g,"&apos;")})'>
+                <img src="${item.image}" class="mitem-img" alt="${item.name}" />
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+                  <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:2px;">${item.name}</div>
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${restaurant.name}</div>
+                  <div class="mono" style="font-size:14px;font-weight:700;color:var(--ink);">${money(item.price)}</div>
+                </div>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+    `}
+  </div>`;
+}
+
+function profileHTML(){
+  const favRestaurants = RESTAURANTS.filter(r => state.favorites.includes(r.id));
+  return `
+  <div style="padding:24px 20px 100px;min-height:100%;">
+    <h1 class="disp" style="font-size:24px;color:var(--ink);margin:0 0 24px;">Profile</h1>
+
+    <div style="display:flex;align-items:center;gap:16px;background:var(--cream);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="User" />
+      <div>
+        <div style="font-weight:700;font-size:18px;color:var(--ink);">Jordan Ellis</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:500;">jordan.ellis@email.com</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:24px;">
+      <div style="flex:1;background:var(--cream);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);">
+        <div class="disp" style="font-size:22px;color:var(--ember);">${state.ordersPlaced}</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px;">Orders placed</div>
+      </div>
+      <div style="flex:1;background:var(--cream);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);">
+        <div class="disp" style="font-size:22px;color:var(--ember);">${favRestaurants.length}</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px;">Favorites</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">Delivery Address</div>
+      <div class="box" style="display:flex;gap:16px;align-items:center;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--ember-light);display:flex;align-items:center;justify-content:center;color:var(--ember);flex-shrink:0;">
+          ${icon('pin', 'currentColor', 20)}
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:2px;">7 Kestrel Lane, Unit 4</div>
+          <div style="font-size:13px;color:var(--muted);font-weight:500;">Leave at the door</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">Favorite Restaurants</div>
+      ${favRestaurants.length === 0 ? `
+        <div class="box" style="text-align:center;color:var(--muted);font-size:14px;font-weight:500;padding:24px 16px;">
+          Tap the heart on any restaurant to save it here.
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${favRestaurants.map(r => `
+            <button class="mitem press" onclick='goRestaurant(${JSON.stringify(r).replace(/'/g,"&apos;")})'>
+              <img src="${r.image}" class="mitem-img" alt="${r.name}" />
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+                <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:4px;">${r.name}</div>
+                <div style="font-size:13px;color:var(--muted);">${r.cuisine}</div>
+              </div>
+            </button>
+          `).join("")}
+        </div>
+      `}
+    </div>
+
+    <button class="bigbtn dark press" style="width:100%;margin-top:8px;" onclick="logOut()">Log Out</button>
   </div>`;
 }
 

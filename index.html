@@ -116,13 +116,23 @@
   .rcard-img { width: 100%; height: 100%; object-fit: cover; }
   .rcard-info { padding: 16px; }
 
-  /* Menu Item */
+  /* Menu Item (list, used in search results) */
   .mitem { 
     display: flex; gap: 16px; text-align: left; background: var(--cream); 
     border: none; border-radius: 16px; padding: 12px; cursor: pointer; width: 100%; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 12px;
   }
   .mitem-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+
+  /* Menu Grid (restaurant menu) */
+  .mgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .mgriditem {
+    display: flex; flex-direction: column; text-align: left; background: var(--cream);
+    border: none; border-radius: 16px; padding: 0; cursor: pointer; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .mgriditem-img { width: 100%; height: 110px; object-fit: cover; }
+  .mgriditem-info { padding: 10px 12px 14px; }
 
   .qtybtn { 
     width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--line); 
@@ -221,9 +231,11 @@ const RESTAURANTS = [
     rating: 4.8, time: "18-28", fee: "Free", tag: "bowl",
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 101, name: "Smoked Chili Chicken Bowl", desc: "Charred chicken thigh, coconut rice, pickled slaw, chili oil.", price: 12.5, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=300&q=80" },
-      { id: 102, name: "Roasted Root Vegetable Bowl", desc: "Beets, carrots, farro, whipped tahini, herb oil.", price: 10.0, image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80" },
-      { id: 103, name: "Sesame Beef Bowl", desc: "Seared flank steak, jasmine rice, scallion, sesame glaze.", price: 14.0, image: "https://images.unsplash.com/photo-1544365558-35aa4afcf11f?auto=format&fit=crop&w=300&q=80" },
+      { id: 101, name: "Smoked Chili Chicken Bowl", desc: "Charred chicken thigh, coconut rice, pickled slaw, chili oil.", price: 12.5, cat: "bowl", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=300&q=80" },
+      { id: 102, name: "Roasted Root Vegetable Bowl", desc: "Beets, carrots, farro, whipped tahini, herb oil.", price: 10.0, cat: "bowl", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80" },
+      { id: 103, name: "Sesame Beef Bowl", desc: "Seared flank steak, jasmine rice, scallion, sesame glaze.", price: 14.0, cat: "bowl", image: "https://images.unsplash.com/photo-1544365558-35aa4afcf11f?auto=format&fit=crop&w=300&q=80" },
+      { id: 104, name: "Iced Hibiscus Tea", desc: "Cold-brewed hibiscus, mint, a touch of honey.", price: 3.5, cat: "drink", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=300&q=80" },
+      { id: 105, name: "Coconut Rice Pudding", desc: "Warm coconut rice pudding, toasted almonds, cinnamon.", price: 5.5, cat: "sweet", image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=300&q=80" },
     ],
   },
   {
@@ -231,8 +243,9 @@ const RESTAURANTS = [
     rating: 4.6, time: "25-35", fee: "R1.50", tag: "grill",
     image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 201, name: "Fire-Grilled Skewers", desc: "Marinated pork, charred pepper, smoked paprika rub.", price: 11.0, image: "https://images.unsplash.com/photo-1555507036-ab1e4006aa07?auto=format&fit=crop&w=300&q=80" },
-      { id: 202, name: "Whole Grilled Trout", desc: "Lemon, thyme, brown butter, roasted fingerlings.", price: 16.5, image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=300&q=80" },
+      { id: 201, name: "Fire-Grilled Skewers", desc: "Marinated pork, charred pepper, smoked paprika rub.", price: 11.0, cat: "grill", image: "https://images.unsplash.com/photo-1555507036-ab1e4006aa07?auto=format&fit=crop&w=300&q=80" },
+      { id: 202, name: "Whole Grilled Trout", desc: "Lemon, thyme, brown butter, roasted fingerlings.", price: 16.5, cat: "grill", image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=300&q=80" },
+      { id: 203, name: "Watermelon Cooler", desc: "Fresh watermelon, lime, mint, sparkling water.", price: 4.0, cat: "drink", image: "https://images.unsplash.com/photo-1550505095-81375e21b8d5?auto=format&fit=crop&w=300&q=80" },
     ],
   },
   {
@@ -240,8 +253,9 @@ const RESTAURANTS = [
     rating: 4.9, time: "15-25", fee: "Free", tag: "noodle",
     image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 301, name: "Ember Broth Ramen", desc: "Slow-smoked pork broth, soft egg, charred scallion.", price: 13.0, image: "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=300&q=80" },
-      { id: 302, name: "Cold Sesame Noodles", desc: "Hand-pulled wheat noodles, chili crisp, cucumber.", price: 9.5, image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=300&q=80" },
+      { id: 301, name: "Ember Broth Ramen", desc: "Slow-smoked pork broth, soft egg, charred scallion.", price: 13.0, cat: "noodle", image: "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=300&q=80" },
+      { id: 302, name: "Cold Sesame Noodles", desc: "Hand-pulled wheat noodles, chili crisp, cucumber.", price: 9.5, cat: "noodle", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=300&q=80" },
+      { id: 303, name: "Iced Jasmine Tea", desc: "Cold-brewed jasmine tea, lightly sweetened.", price: 3.0, cat: "drink", image: "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?auto=format&fit=crop&w=300&q=80" },
     ],
   },
 ];
@@ -272,6 +286,7 @@ const icon = (name, color, size) => `<span style="display:inline-flex;color:${co
 let state = {
   screen: "home",
   activeCat: "all",
+  menuCat: "all",
   restaurant: null,
   item: null,
   qty: 1,
@@ -299,9 +314,9 @@ function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*c.price,0); }
 
 /* ---------------- actions ---------------- */
 function goHome(){ setState({ screen: "home" }); }
-function goRestaurant(r){ setState({ screen: "restaurant", restaurant: r }); window.scrollTo(0,0); }
+function goRestaurant(r){ setState({ screen: "restaurant", restaurant: r, menuCat: "all" }); window.scrollTo(0,0); }
 function goItem(it){ setState({ screen: "item", item: it, qty: 1 }); window.scrollTo(0,0); }
-function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item: it, qty: 1 }); window.scrollTo(0,0); }
+function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item: it, qty: 1, menuCat: "all" }); window.scrollTo(0,0); }
 function goCart(){ setState({ screen: "cart" }); window.scrollTo(0,0); }
 function goCheckout(){ setState({ screen: "checkout" }); window.scrollTo(0,0); }
 function goSearch(){ setState({ screen: "search" }); window.scrollTo(0,0); }
@@ -509,6 +524,8 @@ function homeHTML(){
 }
 
 function restaurantHTML(r){
+  const availableCats = CATS.filter(c => c.id === "all" || r.items.some(it => it.cat === c.id));
+  const filteredItems = state.menuCat === "all" ? r.items : r.items.filter(it => it.cat === state.menuCat);
   return `
   <div>
     <div class="hero-img-wrap">
@@ -524,7 +541,7 @@ function restaurantHTML(r){
       <h1 class="disp" style="font-size:28px;color:var(--ink);margin:0;">${r.name}</h1>
       <div style="font-size:15px;color:var(--muted);font-weight:500;margin:6px 0 16px;">${r.cuisine}</div>
       
-      <div style="display:flex;gap:16px;font-size:14px;color:var(--ink);font-weight:700;margin-bottom:28px;background:var(--cream);padding:16px;border-radius:16px;box-shadow:var(--shadow);">
+      <div style="display:flex;gap:16px;font-size:14px;color:var(--ink);font-weight:700;margin-bottom:24px;background:var(--cream);padding:16px;border-radius:16px;box-shadow:var(--shadow);">
         <span style="display:flex;align-items:center;gap:6px;">${icon('star','#F59E0B',18)} ${r.rating}</span>
         <div style="width:1px;height:20px;background:var(--line);"></div>
         <span style="display:flex;align-items:center;gap:6px;color:var(--muted2);">${icon('clock',null,18)} ${r.time} min</span>
@@ -532,19 +549,30 @@ function restaurantHTML(r){
         <span style="display:flex;align-items:center;gap:6px;color:var(--muted2);">${icon('bike',null,18)} ${r.fee}</span>
       </div>
 
-      <h2 class="disp" style="font-size:20px;color:var(--ink);margin-bottom:16px;">Menu</h2>
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        ${r.items.map(it => `
-          <button class="mitem press" onclick='goItem(${JSON.stringify(it).replace(/'/g,"&apos;")})'>
-            <img src="${it.image}" class="mitem-img" alt="${it.name}" />
-            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-              <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:4px;">${it.name}</div>
-              <div style="font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:8px;">${it.desc}</div>
-              <div class="mono" style="font-size:15px;font-weight:700;color:var(--ink);">${money(it.price)}</div>
+      <h2 class="disp" style="font-size:20px;color:var(--ink);margin-bottom:14px;">Menu</h2>
+
+      <!-- Category chips (horizontal scroll) -->
+      <div style="display:flex;gap:10px;overflow-x:auto;margin-bottom:18px;padding-bottom:4px;scrollbar-width:none;">
+        ${availableCats.map(c => `<button class="catchip press ${state.menuCat===c.id?'active':''}" onclick="setState({menuCat:'${c.id}'})">${c.label}</button>`).join("")}
+      </div>
+
+      <!-- Menu grid -->
+      <div class="mgrid">
+        ${filteredItems.map(it => `
+          <button class="mgriditem press" onclick='goItem(${JSON.stringify(it).replace(/'/g,"&apos;")})'>
+            <img src="${it.image}" class="mgriditem-img" alt="${it.name}" />
+            <div class="mgriditem-info">
+              <div style="font-weight:700;font-size:14px;color:var(--ink);margin-bottom:4px;line-height:1.3;">${it.name}</div>
+              <div class="mono" style="font-size:14px;font-weight:700;color:var(--ember);">${money(it.price)}</div>
             </div>
           </button>
         `).join("")}
       </div>
+      ${filteredItems.length === 0 ? `
+        <div style="text-align:center;color:var(--muted);font-size:14px;font-weight:500;padding:40px 16px;">
+          No items in this category.
+        </div>
+      ` : ""}
     </div>
   </div>`;
 }

@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Ember — Order Food</title>
+<meta name="theme-color" content="#FF5A1F" />
+<link rel="manifest" id="manifest-link" href="" />
+<link rel="apple-touch-icon" href="https://i.postimg.cc/B6hf2Dnm/1000075716-removebg-preview.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Ember" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -203,18 +209,19 @@
   #splash {
     position: absolute; inset: 0; z-index: 999;
     background: var(--ember);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px;
     transition: opacity 0.6s ease, visibility 0.6s ease;
   }
   #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
   
-  /* Updated to use image instead of SVG */
+  /* Updated to use image instead of SVG — enlarged and centered as a single unit, Uber-style */
   .splash-burger { 
-    width: 140px; height: 140px; object-fit: contain;
+    width: 208px; height: 208px; object-fit: contain;
     animation: splashPulse 1.7s ease-in-out infinite; 
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2)); 
   }
-  .splash-footer { position: absolute; left: 0; right: 0; bottom: 64px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .splash-footer { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .splash-title { color: #fff; font-size: 30px; margin: 0; }
   .splash-tagline { color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
   
@@ -1022,37 +1029,88 @@ window.addEventListener('popstate', function(e){
 
 
 /* ---------------- PWA Install Logic ---------------- */
-let deferredPrompt;
+const APP_LOGO_URL = "https://i.postimg.cc/B6hf2Dnm/1000075716-removebg-preview.png";
+
+// Build a real web app manifest at runtime and attach it via a Blob URL.
+// (A <link rel="manifest"> can point at a Blob URL — this is what actually
+// makes Chrome/Edge treat "Add to Home Screen" as a real app install
+// instead of a browser-shortcut bookmark.)
+const manifest = {
+  name: "Ember — Order Food",
+  short_name: "Ember",
+  description: "Fresh. Fast. Fired up.",
+  start_url: ".",
+  scope: ".",
+  display: "standalone",
+  orientation: "portrait",
+  background_color: "#F8FAFC",
+  theme_color: "#FF5A1F",
+  icons: [
+    { src: APP_LOGO_URL, sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: APP_LOGO_URL, sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: APP_LOGO_URL, sizes: "192x192", type: "image/png", purpose: "maskable" },
+    { src: APP_LOGO_URL, sizes: "512x512", type: "image/png", purpose: "maskable" }
+  ]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+document.getElementById('manifest-link').setAttribute('href', URL.createObjectURL(manifestBlob));
+
+// Register the service worker — Chrome requires an active service worker
+// with a fetch handler before it will fire beforeinstallprompt at all.
+// This MUST be a real same-origin file (sw.js) — blob/data URLs are
+// blocked by browsers for service worker registration, so sw.js has to
+// be uploaded alongside this HTML file at your site root.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.log('Service worker registration failed (is sw.js deployed at the site root?):', err);
+    });
+  });
+}
+
 const installBanner = document.getElementById('pwa-banner');
 const installBtn = document.getElementById('pwa-install-btn');
 const closeBtn = document.getElementById('pwa-close-btn');
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBanner.classList.add('show');
-});
+let deferredPrompt;
 
-installBtn.addEventListener('click', async () => {
-  installBanner.classList.remove('show');
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    deferredPrompt = null;
+if (!isStandalone) {
+  if (isIos) {
+    // iOS Safari never fires beforeinstallprompt — there's no programmatic
+    // install. Show instructions for the manual Share > Add to Home Screen
+    // flow instead (with apple-mobile-web-app-capable set in <head>, this
+    // now launches full-screen as a real app, not a Safari shortcut tab).
+    document.querySelector('.pwa-text strong').textContent = 'Install App';
+    document.querySelector('.pwa-text span').textContent = 'Tap Share, then "Add to Home Screen".';
+    installBtn.textContent = 'Got it';
+    installBanner.classList.add('show');
+    installBtn.addEventListener('click', () => installBanner.classList.remove('show'));
+  } else {
+    // Android/Chrome/Edge: only show the banner once the browser has
+    // actually confirmed the app is installable (real event, not a timer).
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBanner.classList.add('show');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      installBanner.classList.remove('show');
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        deferredPrompt = null;
+      }
+    });
   }
-});
+}
 
 closeBtn.addEventListener('click', () => {
   installBanner.classList.remove('show');
 });
-
-// Forcefully show for preview without a manifest (remove in production)
-setTimeout(() => {
-  if(!installBanner.classList.contains('show')) {
-    installBanner.classList.add('show');
-  }
-}, 3000);
 
 
 /* ---------------- splash screen ---------------- */

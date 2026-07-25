@@ -30,7 +30,7 @@
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -48,7 +48,7 @@
   .press:active { transform: scale(0.96); }
 
   #app {
-    max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+    max-width: 480px; margin: 0 auto; height: 100vh; height: 100dvh;
     background: var(--bg); position: relative; display: flex; flex-direction: column;
     overflow: hidden; /* Added to keep popup contained */
   }
@@ -56,7 +56,7 @@
   @media (min-width: 640px) {
     body { background: #E2E8F0; padding: 24px 12px; }
     #app { 
-      min-height: calc(100dvh - 48px); 
+      height: calc(100dvh - 48px); 
       border-radius: 32px; 
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); 
       overflow: hidden; 
@@ -64,10 +64,15 @@
     }
   }
 
-  #screen { flex: 1; position: relative; padding-bottom: 8px; overflow-y: auto; overflow-x: hidden; }
+  /* min-height: 0 overrides the flexbox default (min-height: auto), which
+     otherwise stops this flex:1 child from shrinking below its content's
+     natural height — without it, #app silently grows taller than the
+     viewport and the whole page scrolls instead of just this element,
+     dragging the "fixed" bottom nav along with it. */
+  #screen { flex: 1; min-height: 0; position: relative; padding-bottom: 8px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
 
   #bottomnav {
-    position: sticky; bottom: 0; left: 0; right: 0; z-index: 20;
+    position: relative; z-index: 20;
     flex-shrink: 0; display: flex; justify-content: space-around;
     padding: 12px 8px calc(16px + env(safe-area-inset-bottom)); 
     background: var(--cream);

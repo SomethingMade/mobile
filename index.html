@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ember — order food</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --ink:#1F2417; --cream:#FBF7EF; --panel:#F1EBDD; --line:#EAE2D2;
+    --ember:#E24E1B; --gold:#E8A93B; --basil:#3B5D3A; --muted:#8C8672; --muted2:#5B5645;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:'Inter',sans-serif; background:#EDE6D8; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:32px 12px;
+  }
+  .disp{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  button{ font-family:inherit; }
+  .press:active{ transform: scale(0.96); }
+  ::-webkit-scrollbar{ display:none; }
+
+  #phone{
+    width:380px; height:780px; background:var(--cream);
+    border-radius:44px; border:10px solid var(--ink);
+    box-shadow:0 30px 60px -20px rgba(31,36,23,.45);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+  #statusbar{
+    height:26px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px; font-size:12px; font-weight:600; color:var(--ink); flex-shrink:0; position:relative;
+  }
+  #statusbar .notch{
+    position:absolute; left:50%; top:6px; transform:translateX(-50%);
+    width:90px; height:18px; background:var(--ink); border-radius:10px;
+  }
+  #screen{ flex:1; overflow-y:auto; position:relative; }
+
+  #bottomnav{
+    flex-shrink:0; display:flex; justify-content:space-around;
+    padding:10px 4px 16px; border-top:1px solid var(--line); background:var(--cream);
+  }
+  .navbtn{ background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px; position:relative; cursor:pointer; color:var(--muted); }
+  .navbtn.active{ color:var(--ember); }
+  .navbtn svg{ width:21px; height:21px; }
+  .navbtn span{ font-size:10px; font-weight:600; }
+  .badge{
+    position:absolute; top:-4px; right:-8px; background:var(--ember); color:#fff;
+    font-size:9px; font-weight:700; border-radius:10px; min-width:15px; height:15px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  .backbtn{
+    width:32px; height:32px; border-radius:50%; background:rgba(251,247,239,.9);
+    border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .hero{ height:170px; display:flex; align-items:center; justify-content:center; font-size:60px; position:relative; }
+  .hero.small{ height:118px; border-radius:16px; font-size:44px; }
+
+  .catchip{ flex-shrink:0; padding:7px 15px; border-radius:20px; border:none; cursor:pointer; font-size:12.5px; font-weight:600; background:var(--panel); color:var(--muted2); }
+  .catchip.active{ background:var(--ink); color:var(--cream); }
+
+  .rcard{ text-align:left; background:none; border:none; cursor:pointer; padding:0; display:block; width:100%; }
+  .mitem{ display:flex; gap:12px; text-align:left; background:var(--panel); border:none; border-radius:14px; padding:12px; cursor:pointer; width:100%; }
+
+  .qtybtn{ width:30px; height:30px; border-radius:50%; border:1.5px solid var(--ink); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .qtybtn.filled{ border:none; background:var(--ink); }
+  .qtybtn.filled svg{ stroke:var(--cream); }
+
+  .stickybar{ position:absolute; bottom:0; left:0; right:0; padding:14px 18px; background:var(--cream); border-top:1px solid var(--line); }
+  .bigbtn{ width:100%; border:none; border-radius:14px; padding:14px 20px; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+  .bigbtn.solid{ background:var(--ember); color:var(--cream); }
+  .bigbtn.dark{ background:var(--ink); color:var(--cream); justify-content:center; }
+
+  .section{ margin-bottom:14px; }
+  .section .title{ font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin-bottom:8px; }
+  .section .box{ background:var(--panel); border-radius:14px; padding:14px; }
+
+  .step{ display:flex; align-items:flex-start; gap:12px; }
+  .dot{ width:20px; height:20px; border-radius:50%; flex-shrink:0; background:var(--line); display:flex; align-items:center; justify-content:center; }
+  .dot.done{ background:var(--basil); }
+  .stemline{ width:2px; height:30px; background:var(--line); }
+  .stemline.done{ background:var(--basil); }
+
+  a.rcard, a.mitem{ text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div id="phone">
+  <div id="statusbar"><span>9:41</span><div class="notch"></div><span>100%</span></div>
+  <div id="screen"></div>
+  <div id="bottomnav"></div>
+</div>
+
+<script>
+/* ---------------- data ---------------- */
+const CATS = [
+  { id: "all", label: "All" },
+  { id: "bowl", label: "Bowls" },
+  { id: "grill", label: "Grilled" },
+  { id: "noodle", label: "Noodles" },
+  { id: "sweet", label: "Sweets" },
+  { id: "drink", label: "Drinks" },
+];
+
+const RESTAURANTS = [
+  {
+    id: 1, name: "Maro's Kitchen", cuisine: "Home-style Ember bowls",
+    rating: 4.8, time: "18-28", fee: "Free", tag: "bowl",
+    grad: "linear-gradient(135deg,#E24E1B 0%,#E8A93B 100%)", emoji: "🍲",
+    items: [
+      { id: 101, name: "Smoked Chili Chicken Bowl", desc: "Charred chicken thigh, coconut rice, pickled slaw, chili oil.", price: 12.5, emoji: "🥘" },
+      { id: 102, name: "Roasted Root Vegetable Bowl", desc: "Beets, carrots, farro, whipped tahini, herb oil.", price: 10.0, emoji: "🥕" },
+      { id: 103, name: "Sesame Beef Bowl", desc: "Seared flank steak, jasmine rice, scallion, sesame glaze.", price: 14.0, emoji: "🥩" },
+    ],
+  },
+  {
+    id: 2, name: "Basil & Bone", cuisine: "Wood-fired grill",
+    rating: 4.6, time: "25-35", fee: "$1.50", tag: "grill",
+    grad: "linear-gradient(135deg,#3B5D3A 0%,#6B8E5A 100%)", emoji: "🔥",
+    items: [
+      { id: 201, name: "Fire-Grilled Skewers", desc: "Marinated pork, charred pepper, smoked paprika rub.", price: 11.0, emoji: "🍢" },
+      { id: 202, name: "Whole Grilled Trout", desc: "Lemon, thyme, brown butter, roasted fingerlings.", price: 16.5, emoji: "🐟" },
+    ],
+  },
+  {
+    id: 3, name: "Noodle Ember House", cuisine: "Hand-pulled noodles",
+    rating: 4.9, time: "15-25", fee: "Free", tag: "noodle",
+    grad: "linear-gradient(135deg,#1F2417 0%,#3B5D3A 100%)", emoji: "🍜",
+    items: [
+      { id: 301, name: "Ember Broth Ramen", desc: "Slow-smoked pork broth, soft egg, charred scallion.", price: 13.0, emoji: "🍜" },
+      { id: 302, name: "Cold Sesame Noodles", desc: "Hand-pulled wheat noodles, chili crisp, cucumber.", price: 9.5, emoji: "🥢" },
+    ],
+  },
+];
+
+const money = n => `$${n.toFixed(2)}`;
+
+/* ---------------- icons (inline svg, feather-style) ---------------- */
+const ICONS = {
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  bag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4h9L18 2"/><path d="M3.5 8h17l-1.4 11.2a2 2 0 0 1-2 1.8H6.9a2 2 0 0 1-2-1.8z"/></svg>`,
+  user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  star: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`,
+  bike: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4-8h4l3 8M10 9h3l2 4"/></svg>`,
+  chevleft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  minus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="rgba(0,0,0,0.15)" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.6-9C.6 8.3 2 4.5 5.7 4c2-.3 3.7.7 4.8 2.3C11.6 4.7 13.3 3.7 15.3 4c3.7.5 5.1 4.3 3.3 8-2.6 4.4-9.6 9-9.6 9z"/></svg>`,
+  flame: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.4-.7-2-1-3 1.7.5 3.5 2.2 3.5 5a5 5 0 0 1-10 0c0-2.2 1.3-3.5 2-5 .3 1 .4 2 .5 3z"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+};
+const icon = (name, color, size) => `<span style="display:inline-flex;color:${color||'currentColor'};width:${size||16}px;height:${size||16}px;">${ICONS[name]}</span>`;
+
+/* ---------------- state ---------------- */
+let state = {
+  screen: "home",
+  activeCat: "all",
+  restaurant: null,
+  item: null,
+  qty: 1,
+  cart: [], // {id,name,price,emoji,qty}
+};
+
+function setState(patch){ state = { ...state, ...patch }; render(); }
+
+function cartCount(){ return state.cart.reduce((s,c)=>s+c.qty,0); }
+function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*c.price,0); }
+
+/* ---------------- actions ---------------- */
+function goHome(){ setState({ screen: "home" }); }
+function goRestaurant(r){ setState({ screen: "restaurant", restaurant: r }); }
+function goItem(it){ setState({ screen: "item", item: it, qty: 1 }); }
+function goCart(){ setState({ screen: "cart" }); }
+function goCheckout(){ setState({ screen: "checkout" }); }
+function backFromRestaurant(){ setState({ screen: "home" }); }
+function backFromItem(){ setState({ screen: "restaurant" }); }
+function backFromCart(){ setState({ screen: state.restaurant ? "restaurant" : "home" }); }
+function backFromCheckout(){ setState({ screen: "cart" }); }
+
+function changeQty(delta){ setState({ qty: Math.max(1, state.qty + delta) }); }
+
+function addToCart(){
+  const it = state.item;
+  const existing = state.cart.find(c => c.id === it.id);
+  let cart;
+  if (existing) {
+    cart = state.cart.map(c => c.id === it.id ? { ...c, qty: c.qty + state.qty } : c);
+  } else {
+    cart = [...state.cart, { id: it.id, name: it.name, price: it.price, emoji: it.emoji, qty: state.qty }];
+  }
+  setState({ cart, screen: "restaurant", qty: 1 });
+}
+
+function changeCartQty(id, delta){
+  const cart = state.cart
+    .map(c => c.id === id ? { ...c, qty: c.qty + delta } : c)
+    .filter(c => c.qty > 0);
+  setState({ cart });
+}
+
+function placeOrder(){ setState({ cart: [], screen: "tracking" }); }
+
+/* ---------------- render ---------------- */
+function render(){
+  renderScreen();
+  renderNav();
+}
+
+function renderNav(){
+  const nav = document.getElementById("bottomnav");
+  if (!["home","restaurant","item"].includes(state.screen)) { nav.style.display = "none"; return; }
+  nav.style.display = "flex";
+  const cc = cartCount();
+  nav.innerHTML = `
+    <button class="navbtn ${state.screen==='home'?'active':''}" onclick="goHome()">${icon('home')}<span>Home</span></button>
+    <button class="navbtn" onclick="goHome()">${icon('search')}<span>Search</span></button>
+    <button class="navbtn" onclick="goCart()">${icon('bag')}<span>Cart</span>${cc>0?`<span class="badge">${cc}</span>`:''}</button>
+    <button class="navbtn" onclick="goHome()">${icon('user')}<span>You</span></button>
+  `;
+}
+
+function renderScreen(){
+  const el = document.getElementById("screen");
+  if (state.screen === "home") return el.innerHTML = homeHTML();
+  if (state.screen === "restaurant") return el.innerHTML = restaurantHTML(state.restaurant);
+  if (state.screen === "item") return el.innerHTML = itemHTML(state.item);
+  if (state.screen === "cart") return el.innerHTML = cartHTML();
+  if (state.screen === "checkout") return el.innerHTML = checkoutHTML();
+  if (state.screen === "tracking") return el.innerHTML = trackingHTML();
+}
+
+function homeHTML(){
+  const filtered = state.activeCat === "all" ? RESTAURANTS : RESTAURANTS.filter(r => r.tag === state.activeCat);
+  return `
+  <div style="padding:14px 18px 10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:4px;color:var(--muted);font-size:11px;font-weight:600;">${icon('pin',null,12)} DELIVER TO</div>
+        <div style="font-weight:700;font-size:14px;color:var(--ink);">7 Kestrel Lane, Unit 4</div>
+      </div>
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--basil);display:flex;align-items:center;justify-content:center;color:var(--cream);font-weight:700;font-size:14px;">K</div>
+    </div>
+
+    <h1 class="disp" style="font-size:26px;font-weight:600;color:var(--ink);line-height:1.15;margin:6px 0 14px;">What's cooking<br/>tonight?</h1>
+
+    <div style="display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:14px;padding:11px 14px;margin-bottom:16px;">
+      ${icon('search','#8C8672',16)}<span style="color:var(--muted);font-size:13px;">Search restaurants, dishes...</span>
+    </div>
+
+    <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:18px;">
+      ${CATS.map(c => `<button class="catchip press ${state.activeCat===c.id?'active':''}" onclick="setState({activeCat:'${c.id}'})">${c.label}</button>`).join("")}
+    </div>
+
+    <div style="border-radius:18px;padding:16px 18px;margin-bottom:20px;position:relative;overflow:hidden;background:linear-gradient(120deg,#E24E1B,#E8A93B);color:var(--cream);">
+      <div style="position:absolute;right:-10px;bottom:-14px;opacity:.25;">${icon('flame',null,70)}</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.5px;opacity:.9;">TONIGHT'S EMBER PICK</div>
+      <div class="disp" style="font-size:19px;font-weight:600;margin:3px 0 2px;">Free delivery, all bowls</div>
+      <div style="font-size:12px;opacity:.9;">Ends at midnight</div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+      <span class="disp" style="font-size:17px;font-weight:600;color:var(--ink);">Popular near you</span>
+      <span style="font-size:12px;color:var(--muted);font-weight:600;">${filtered.length} spots</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;padding-bottom:10px;">
+      ${filtered.map(r => `
+        <button class="rcard press" onclick='goRestaurant(${JSON.stringify(r).replace(/'/g,"&apos;")})'>
+          <div class="hero small" style="background:${r.grad};">
+            ${r.emoji}
+            <div style="position:absolute;top:10px;right:10px;">${icon('heart','#FBF7EF',16)}</div>
+          </div>
+          <div style="padding:8px 2px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;font-size:14.5px;color:var(--ink);">${r.name}</span>
+              <span style="display:flex;align-items:center;gap:3px;font-size:12.5px;font-weight:600;color:var(--ink);">${icon('star','#E8A93B',12)} ${r.rating}</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${r.cuisine}</div>
+            <div style="display:flex;gap:12px;margin-top:4px;font-size:11.5px;color:var(--muted2);font-weight:500;">
+              <span style="display:flex;align-items:center;gap:3px;">${icon('clock',null,11)} ${r.time} min</span>
+              <span style="display:flex;align-items:center;gap:3px;">${icon('bike',null,11)} ${r.fee}</span>
+            </div>
+          </div>
+        </button>
+      `).join("")}
+    </div>
+  </div>`;
+}
+
+function restaurantHTML(r){
+  return `
+  <div>
+    <div class="hero" style="background:${r.grad};">
+      <button class="backbtn press" onclick="backFromRestaurant()">${icon('chevleft','#1F2417',18)}</button>
+      ${r.emoji}
+    </div>
+    <div style="padding:16px 18px;">
+      <h1 class="disp" style="font-size:22px;font-weight:600;color:var(--ink);margin:0;">${r.name}</h1>
+      <div style="font-size:12.5px;color:var(--muted);margin:3px 0 8px;">${r.cuisine}</div>
+      <div style="display:flex;gap:14px;font-size:12px;color:var(--muted2);font-weight:600;margin-bottom:18px;">
+        <span style="display:flex;align-items:center;gap:3px;">${icon('star','#E8A93B',12)} ${r.rating}</span>
+        <span style="display:flex;align-items:center;gap:3px;">${icon('clock',null,12)} ${r.time} min</span>
+        <span style="display:flex;align-items:center;gap:3px;">${icon('bike',null,12)} ${r.fee}</span>
+      </div>
+
+      <div class="disp" style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px;">Menu</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        ${r.items.map(it => `
+          <button class="mitem press" onclick='goItem(${JSON.stringify(it).replace(/'/g,"&apos;")})'>
+            <div style="width:56px;height:56px;border-radius:10px;background:${r.grad};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;">${it.emoji}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:13.5px;color:var(--ink);">${it.name}</div>
+              <div style="font-size:11.5px;color:var(--muted);margin:2px 0 6px;line-height:1.35;">${it.desc}</div>
+              <div class="mono" style="font-size:13px;font-weight:600;color:var(--ember);">${money(it.price)}</div>
+            </div>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function itemHTML(item){
+  return `
+  <div>
+    <div class="hero" style="background:linear-gradient(135deg,#E24E1B,#E8A93B);font-size:76px;">
+      <button class="backbtn press" onclick="backFromItem()">${icon('chevleft','#1F2417',18)}</button>
+      ${item.emoji}
+    </div>
+    <div style="padding:18px 18px 100px;">
+      <h1 class="disp" style="font-size:22px;font-weight:600;color:var(--ink);margin:0;">${item.name}</h1>
+      <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:8px 0 14px;">${item.desc}</p>
+      <div class="mono" style="font-size:19px;font-weight:600;color:var(--ember);margin-bottom:20px;">${money(item.price)}</div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+        <span style="font-size:13px;font-weight:600;color:var(--ink);">Quantity</span>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <button class="qtybtn press" onclick="changeQty(-1)">${icon('minus','#1F2417',14)}</button>
+          <span class="mono" style="font-weight:600;font-size:15px;min-width:14px;text-align:center;">${state.qty}</span>
+          <button class="qtybtn filled press" onclick="changeQty(1)">${icon('plus','#FBF7EF',14)}</button>
+        </div>
+      </div>
+    </div>
+    <div class="stickybar">
+      <button class="bigbtn solid press" onclick="addToCart()">
+        <span>Add to cart</span><span class="mono">${money(item.price * state.qty)}</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+function cartHTML(){
+  const cart = state.cart;
+  const subtotal = cartSubtotal();
+  const delivery = cart.length ? 2.5 : 0;
+  const total = subtotal + delivery;
+  return `
+  <div style="padding:14px 18px 100px;min-height:100%;position:relative;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button class="press" onclick="backFromCart()" style="background:none;border:none;cursor:pointer;">${icon('chevleft','#1F2417',20)}</button>
+      <h1 class="disp" style="font-size:20px;font-weight:600;color:var(--ink);margin:0;">Your cart</h1>
+    </div>
+
+    ${cart.length === 0 ? `
+      <div style="text-align:center;margin-top:80px;color:var(--muted);">
+        <div style="opacity:.5;margin-bottom:10px;">${icon('bag',null,36)}</div>
+        <div style="font-size:13px;font-weight:500;">Your cart is empty</div>
+      </div>
+    ` : `
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+        ${cart.map(c => `
+          <div style="display:flex;gap:12px;align-items:center;background:var(--panel);border-radius:14px;padding:12px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#E24E1B,#E8A93B);display:flex;align-items:center;justify-content:center;font-size:22px;">${c.emoji}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:13px;color:var(--ink);">${c.name}</div>
+              <div class="mono" style="font-size:12px;color:var(--ember);font-weight:600;">${money(c.price)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="qtybtn press" style="width:24px;height:24px;" onclick="changeCartQty(${c.id},-1)">${icon('minus','#1F2417',11)}</button>
+              <span class="mono" style="font-size:13px;font-weight:600;min-width:12px;text-align:center;">${c.qty}</span>
+              <button class="qtybtn filled press" style="width:24px;height:24px;" onclick="changeCartQty(${c.id},1)">${icon('plus','#FBF7EF',11)}</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div style="border-top:1px dashed #C9BFA8;padding-top:14px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:500;color:var(--ink);"><span>Subtotal</span><span class="mono">${money(subtotal)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:500;color:var(--ink);"><span>Delivery</span><span class="mono">${money(delivery)}</span></div>
+        <div style="border-top:1px solid var(--line);margin:6px 0;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:700;color:var(--ink);"><span>Total</span><span class="mono">${money(total)}</span></div>
+      </div>
+    `}
+  </div>
+  ${cart.length > 0 ? `
+    <div class="stickybar">
+      <button class="bigbtn dark press" onclick="goCheckout()">Go to checkout</button>
+    </div>
+  ` : ""}`;
+}
+
+function checkoutHTML(){
+  const total = cartSubtotal() + (state.cart.length ? 2.5 : 0);
+  return `
+  <div style="padding:14px 18px 100px;min-height:100%;position:relative;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+      <button class="press" onclick="backFromCheckout()" style="background:none;border:none;cursor:pointer;">${icon('chevleft','#1F2417',20)}</button>
+      <h1 class="disp" style="font-size:20px;font-weight:600;color:var(--ink);margin:0;">Checkout</h1>
+    </div>
+
+    <div class="section">
+      <div class="title">DELIVERY ADDRESS</div>
+      <div class="box" style="display:flex;gap:10px;align-items:flex-start;">
+        ${icon('pin','#E24E1B',16)}
+        <div><div style="font-weight:700;font-size:13px;color:var(--ink);">7 Kestrel Lane, Unit 4</div>
+        <div style="font-size:11.5px;color:var(--muted);">Leave at the door</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">PAYMENT METHOD</div>
+      <div class="box" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:22px;border-radius:5px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:9px;font-weight:700;">VISA</div>
+          <span style="font-size:13px;font-weight:600;color:var(--ink);">•••• 4471</span>
+        </div>
+        ${icon('check','#3B5D3A',16)}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">ESTIMATED DELIVERY</div>
+      <div class="box" style="display:flex;align-items:center;gap:8px;">
+        ${icon('clock','#E24E1B',15)}<span style="font-size:13px;font-weight:600;color:var(--ink);">25–35 minutes</span>
+      </div>
+    </div>
+  </div>
+  <div class="stickybar">
+    <button class="bigbtn solid press" onclick="placeOrder()">
+      <span>Place order</span><span class="mono">${money(total)}</span>
+    </button>
+  </div>`;
+}
+
+function trackingHTML(){
+  const steps = [
+    { label: "Order confirmed", done: true },
+    { label: "Preparing your food", done: true },
+    { label: "Rider on the way", done: false },
+    { label: "Delivered", done: false },
+  ];
+  return `
+  <div style="padding:24px 18px;min-height:100%;display:flex;flex-direction:column;align-items:center;">
+    <div style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#E24E1B,#E8A93B);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:16px;">🔥</div>
+    <h1 class="disp" style="font-size:21px;font-weight:600;color:var(--ink);margin:0 0 4px;text-align:center;">Your order is on the fire</h1>
+    <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:0 0 24px;">Arriving in ~28 minutes</p>
+
+    <div style="width:100%;display:flex;flex-direction:column;gap:0;margin-bottom:28px;">
+      ${steps.map((s,i) => `
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="dot ${s.done?'done':''}">${s.done ? icon('check','#FBF7EF',12) : ''}</div>
+            ${i < steps.length-1 ? `<div class="stemline ${s.done?'done':''}"></div>` : ''}
+          </div>
+          <span style="font-size:13px;font-weight:600;color:${s.done?'var(--ink)':'var(--muted)'};padding-top:1px;">${s.label}</span>
+        </div>
+      `).join("")}
+    </div>
+
+    <button class="bigbtn dark press" onclick="goHome()">Back to home</button>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>

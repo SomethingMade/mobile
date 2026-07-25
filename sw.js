@@ -1,43 +1,40 @@
-const CACHE_NAME = "ember-cache-v1";
+// Ember — service worker
+// This file must live at the SAME ORIGIN as index.html (e.g. deployed to
+// your site root as /sw.js) — browsers refuse to register a service worker
+// from a blob/data URL, so it can't be inlined into the single HTML file.
+
+const CACHE_NAME = 'ember-cache-v1';
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./https://i.postimg.cc/B6hf2Dnm/1000075716-removebg-preview.png",
-  "./https://i.postimg.cc/B6hf2Dnm/1000075716-removebg-preview.png",
-  "./https://i.postimg.cc/B6hf2Dnm/1000075716-removebg-preview.png",
+  './',
+  './index.html'
 ];
 
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
   );
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+// Network-first, falling back to cache when offline — this fetch handler
+// is also what satisfies Chrome's installability check.
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

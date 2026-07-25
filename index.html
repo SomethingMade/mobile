@@ -314,6 +314,7 @@ const RESTAURANTS = [
 ];
 
 const money = n => `R${n.toFixed(2)}`;
+const ORDER_STEPS = ["Order confirmed", "Preparing your food", "Rider on the way", "Delivered"];
 
 /* ---------------- icons ---------------- */
 const ICONS = {
@@ -373,6 +374,7 @@ function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item
 function goCart(){ setState({ screen: "cart" }); window.scrollTo(0,0); }
 function goCheckout(){ setState({ screen: "checkout" }); window.scrollTo(0,0); }
 function goSearch(){ setState({ screen: "search" }); window.scrollTo(0,0); }
+function goTracking(){ setState({ screen: "tracking" }); window.scrollTo(0,0); }
 function goProfile(){ setState({ screen: "profile" }); window.scrollTo(0,0); }
 function backFromRestaurant(){ setState({ screen: "home" }); }
 function backFromItem(){ setState({ screen: state.restaurant ? "restaurant" : "search" }); }
@@ -439,6 +441,7 @@ function placeOrder(){
     date: new Date(),
     items: state.cart,
     total: cartSubtotal() + (state.cart.length ? 2.5 : 0),
+    status: 1, // steps 0 & 1 (confirmed, preparing) start out done
   };
   setState({
     cart: [],
@@ -447,6 +450,16 @@ function placeOrder(){
     orderHistory: [order, ...state.orderHistory],
   });
   window.scrollTo(0,0);
+  setTimeout(() => advanceOrder(order.id), 6000);
+}
+
+function advanceOrder(orderId){
+  const order = state.orderHistory.find(o => o.id === orderId);
+  if (!order || order.status >= ORDER_STEPS.length - 1) return;
+  const orderHistory = state.orderHistory.map(o => o.id === orderId ? { ...o, status: o.status + 1 } : o);
+  setState({ orderHistory });
+  const updated = orderHistory.find(o => o.id === orderId);
+  if (updated.status < ORDER_STEPS.length - 1) setTimeout(() => advanceOrder(orderId), 6000);
 }
 
 /* ---------------- render ---------------- */
@@ -469,15 +482,23 @@ function render(){
 
 function renderNav(){
   const nav = document.getElementById("bottomnav");
-  if (!["home","restaurant","item","search","profile"].includes(state.screen)) { nav.style.display = "none"; return; }
+  if (!["home","restaurant","item","search","tracking","profile"].includes(state.screen)) { nav.style.display = "none"; return; }
   nav.style.display = "flex";
   const cc = cartCount();
+  const hasActiveOrder = state.orderHistory.some(o => o.status < ORDER_STEPS.length - 1);
   nav.innerHTML = `
     <button class="navbtn ${state.screen==='home'?'active':''}" onclick="goHome()">
       ${icon('home')}<span>Home</span>
     </button>
     <button class="navbtn ${state.screen==='search'?'active':''}" onclick="goSearch()">
       ${icon('search')}<span>Search</span>
+    </button>
+    <button class="navbtn ${state.screen==='tracking'?'active':''}" onclick="goTracking()">
+      <div style="position:relative;">
+        ${icon('bike')}
+        ${hasActiveOrder?`<span style="position:absolute;top:-2px;right:-4px;width:9px;height:9px;border-radius:50%;background:var(--ember);border:2px solid var(--cream);"></span>`:''}
+      </div>
+      <span>Track</span>
     </button>
     <button class="navbtn" onclick="goCart()">
       <div style="position:relative;">
@@ -769,32 +790,63 @@ function checkoutHTML(){
 }
 
 function trackingHTML(){
-  const steps = [
-    { label: "Order confirmed", done: true },
-    { label: "Preparing your food", done: true },
-    { label: "Rider on the way", done: false },
-    { label: "Delivered", done: false },
-  ];
-  return `
-  <div style="padding:40px 24px;min-height:100%;display:flex;flex-direction:column;align-items:center;">
-    <img src="https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=400&q=80" style="width:120px;height:120px;border-radius:50%;object-fit:cover;margin-bottom:24px;box-shadow:0 10px 25px rgba(0,0,0,0.15);" alt="Delivery" />
-    
-    <h1 class="disp" style="font-size:26px;color:var(--ink);margin:0 0 8px;text-align:center;">Order is on the fire</h1>
-    <p style="font-size:15px;color:var(--muted);text-align:center;font-weight:500;margin:0 0 40px;">Arriving in ~28 minutes</p>
+  const activeOrder = state.orderHistory.find(o => o.status < ORDER_STEPS.length - 1);
+  const pastOrders = state.orderHistory.filter(o => !activeOrder || o.id !== activeOrder.id);
 
-    <div style="width:100%;display:flex;flex-direction:column;gap:0;margin-bottom:48px;padding:0 20px;">
-      ${steps.map((s,i) => `
-        <div class="step">
-          <div style="display:flex;flex-direction:column;align-items:center;">
-            <div class="dot ${s.done ? 'done' : ''}">${s.done ? icon('check', 'currentColor', 14) : ''}</div>
-            ${i < steps.length-1 ? `<div class="stemline ${s.done ? 'done' : ''}"></div>` : ''}
-          </div>
-          <span style="font-size:15px;font-weight:700;color:${s.done ? 'var(--ink)' : 'var(--muted)'};padding-top:2px;">${s.label}</span>
+  const stepsHTML = (status) => ORDER_STEPS.map((label, i) => {
+    const done = i <= status;
+    return `
+      <div class="step">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="dot ${done ? 'done' : ''}">${done ? icon('check', 'currentColor', 14) : ''}</div>
+          ${i < ORDER_STEPS.length-1 ? `<div class="stemline ${i < status ? 'done' : ''}"></div>` : ''}
         </div>
-      `).join("")}
-    </div>
+        <span style="font-size:15px;font-weight:700;color:${done ? 'var(--ink)' : 'var(--muted)'};padding-top:2px;">${label}</span>
+      </div>`;
+  }).join("");
 
-    <button class="bigbtn dark press" style="width:100%;" onclick="goHome()">Back to Home</button>
+  return `
+  <div style="padding:24px 20px 100px;min-height:100%;">
+    <h1 class="disp" style="font-size:24px;color:var(--ink);margin:0 0 24px;">Orders</h1>
+
+    ${activeOrder ? `
+      <div class="box" style="padding:28px 20px;margin-bottom:28px;display:flex;flex-direction:column;align-items:center;">
+        <img src="https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=400&q=80" style="width:96px;height:96px;border-radius:50%;object-fit:cover;margin-bottom:20px;box-shadow:0 10px 25px rgba(0,0,0,0.15);" alt="Delivery" />
+        <h2 class="disp" style="font-size:20px;color:var(--ink);margin:0 0 4px;text-align:center;">${ORDER_STEPS[activeOrder.status] === 'Delivered' ? 'Order delivered' : 'Order is on the fire'}</h2>
+        <p style="font-size:14px;color:var(--muted);text-align:center;font-weight:500;margin:0 0 32px;">${activeOrder.items.length} item${activeOrder.items.length!==1?'s':''} · ${money(activeOrder.total)}</p>
+        <div style="width:100%;display:flex;flex-direction:column;padding:0 8px;">
+          ${stepsHTML(activeOrder.status)}
+        </div>
+      </div>
+    ` : `
+      <div class="box" style="text-align:center;color:var(--muted);font-size:14px;font-weight:500;padding:28px 16px;margin-bottom:28px;">
+        No order in progress right now.<br/>Your live status will show up here once you order.
+      </div>
+    `}
+
+    <div class="section">
+      <div class="title">Order History</div>
+      ${pastOrders.length === 0 ? `
+        <div class="box" style="text-align:center;color:var(--muted);font-size:14px;font-weight:500;padding:24px 16px;">
+          No past orders yet.
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${pastOrders.map(o => `
+            <div class="box" style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px;">${o.items.length} item${o.items.length!==1?'s':''}</div>
+                <div style="font-size:12px;color:var(--muted);font-weight:500;">${new Date(o.date).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="mono" style="font-size:15px;font-weight:800;color:var(--ember);">${money(o.total)}</div>
+                <div style="font-size:11px;font-weight:700;margin-top:2px;color:${o.status >= ORDER_STEPS.length-1 ? 'var(--basil)' : 'var(--ember)'};">${ORDER_STEPS[o.status]}</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `}
+    </div>
   </div>`;
 }
 

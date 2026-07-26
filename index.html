@@ -284,9 +284,20 @@ const RESTAURANTS = [
     rating: 4.8, time: "18-28", fee: "Free", tag: "bowl",
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 101, name: "Smoked Chili Chicken Bowl", desc: "Charred chicken thigh, coconut rice, pickled slaw, chili oil.", price: 12.5, cat: "bowl", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=300&q=80" },
+      { id: 101, name: "Smoked Chili Chicken Bowl", desc: "Charred chicken thigh, coconut rice, pickled slaw, chili oil.", price: 12.5, cat: "bowl", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=300&q=80",
+        extras: [
+          { id: "101x1", name: "Extra Chicken", price: 3.5 },
+          { id: "101x2", name: "Fried Egg", price: 1.5 },
+          { id: "101x3", name: "Avocado", price: 2.0 },
+          { id: "101x4", name: "Extra Chili Oil", price: 0.5 },
+        ] },
       { id: 102, name: "Roasted Root Vegetable Bowl", desc: "Beets, carrots, farro, whipped tahini, herb oil.", price: 10.0, cat: "bowl", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80" },
-      { id: 103, name: "Sesame Beef Bowl", desc: "Seared flank steak, jasmine rice, scallion, sesame glaze.", price: 14.0, cat: "bowl", image: "https://images.unsplash.com/photo-1544365558-35aa4afcf11f?auto=format&fit=crop&w=300&q=80" },
+      { id: 103, name: "Sesame Beef Bowl", desc: "Seared flank steak, jasmine rice, scallion, sesame glaze.", price: 14.0, cat: "bowl", image: "https://images.unsplash.com/photo-1544365558-35aa4afcf11f?auto=format&fit=crop&w=300&q=80",
+        extras: [
+          { id: "103x1", name: "Extra Steak", price: 4.5 },
+          { id: "103x2", name: "Sesame Seeds", price: 0.5 },
+          { id: "103x3", name: "Pickled Ginger", price: 1.0 },
+        ] },
       { id: 104, name: "Iced Hibiscus Tea", desc: "Cold-brewed hibiscus, mint, a touch of honey.", price: 3.5, cat: "drink", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=300&q=80" },
       { id: 105, name: "Coconut Rice Pudding", desc: "Warm coconut rice pudding, toasted almonds, cinnamon.", price: 5.5, cat: "sweet", image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=300&q=80" },
     ],
@@ -296,7 +307,12 @@ const RESTAURANTS = [
     rating: 4.6, time: "25-35", fee: "R1.50", tag: "grill",
     image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 201, name: "Fire-Grilled Skewers", desc: "Marinated pork, charred pepper, smoked paprika rub.", price: 11.0, cat: "grill", image: "https://images.unsplash.com/photo-1555507036-ab1e4006aa07?auto=format&fit=crop&w=300&q=80" },
+      { id: 201, name: "Fire-Grilled Skewers", desc: "Marinated pork, charred pepper, smoked paprika rub.", price: 11.0, cat: "grill", image: "https://images.unsplash.com/photo-1555507036-ab1e4006aa07?auto=format&fit=crop&w=300&q=80",
+        extras: [
+          { id: "201x1", name: "Extra Skewer", price: 3.0 },
+          { id: "201x2", name: "Chimichurri", price: 1.0 },
+          { id: "201x3", name: "Smoked Paprika Rub", price: 0.5 },
+        ] },
       { id: 202, name: "Whole Grilled Trout", desc: "Lemon, thyme, brown butter, roasted fingerlings.", price: 16.5, cat: "grill", image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=300&q=80" },
       { id: 203, name: "Watermelon Cooler", desc: "Fresh watermelon, lime, mint, sparkling water.", price: 4.0, cat: "drink", image: "https://images.unsplash.com/photo-1550505095-81375e21b8d5?auto=format&fit=crop&w=300&q=80" },
     ],
@@ -306,7 +322,13 @@ const RESTAURANTS = [
     rating: 4.9, time: "15-25", fee: "Free", tag: "noodle",
     image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80",
     items: [
-      { id: 301, name: "Ember Broth Ramen", desc: "Slow-smoked pork broth, soft egg, charred scallion.", price: 13.0, cat: "noodle", image: "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=300&q=80" },
+      { id: 301, name: "Ember Broth Ramen", desc: "Slow-smoked pork broth, soft egg, charred scallion.", price: 13.0, cat: "noodle", image: "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=300&q=80",
+        extras: [
+          { id: "301x1", name: "Extra Noodles", price: 2.5 },
+          { id: "301x2", name: "Extra Soft Egg", price: 1.5 },
+          { id: "301x3", name: "Nori Sheet", price: 1.0 },
+          { id: "301x4", name: "Chili Crisp", price: 0.5 },
+        ] },
       { id: 302, name: "Cold Sesame Noodles", desc: "Hand-pulled wheat noodles, chili crisp, cucumber.", price: 9.5, cat: "noodle", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=300&q=80" },
       { id: 303, name: "Iced Jasmine Tea", desc: "Cold-brewed jasmine tea, lightly sweetened.", price: 3.0, cat: "drink", image: "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?auto=format&fit=crop&w=300&q=80" },
     ],
@@ -344,6 +366,7 @@ let state = {
   restaurant: null,
   item: null,
   qty: 1,
+  selectedExtras: [],
   cart: [],
   searchQuery: "",
   favorites: [],
@@ -364,13 +387,23 @@ function setState(patch, opts){
 }
 
 function cartCount(){ return state.cart.reduce((s,c)=>s+c.qty,0); }
-function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*c.price,0); }
+function extrasTotal(extras){ return (extras||[]).reduce((s,e)=>s+e.price,0); }
+function cartLineUnitPrice(c){ return c.price + extrasTotal(c.extras); }
+function cartLineKey(itemId, extraIds){ return itemId + "|" + [...extraIds].sort().join(","); }
+function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*cartLineUnitPrice(c),0); }
 
 /* ---------------- actions ---------------- */
 function goHome(){ setState({ screen: "home" }); }
 function goRestaurant(r){ setState({ screen: "restaurant", restaurant: r, menuCat: "all" }); window.scrollTo(0,0); }
-function goItem(it){ setState({ screen: "item", item: it, qty: 1 }); window.scrollTo(0,0); }
-function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item: it, qty: 1, menuCat: "all" }); window.scrollTo(0,0); }
+function goItem(it){ setState({ screen: "item", item: it, qty: 1, selectedExtras: [] }); window.scrollTo(0,0); }
+function goItemFromSearch(r, it){ setState({ screen: "item", restaurant: r, item: it, qty: 1, selectedExtras: [], menuCat: "all" }); window.scrollTo(0,0); }
+
+function toggleExtra(id){
+  const selectedExtras = state.selectedExtras.includes(id)
+    ? state.selectedExtras.filter(e => e !== id)
+    : [...state.selectedExtras, id];
+  setState({ selectedExtras });
+}
 function goCart(){ setState({ screen: "cart" }); window.scrollTo(0,0); }
 function goCheckout(){ setState({ screen: "checkout" }); window.scrollTo(0,0); }
 function goSearch(){ setState({ screen: "search" }); window.scrollTo(0,0); }
@@ -418,19 +451,21 @@ function changeQty(delta){ setState({ qty: Math.max(1, state.qty + delta) }); }
 
 function addToCart(){
   const it = state.item;
-  const existing = state.cart.find(c => c.id === it.id);
+  const chosenExtras = (it.extras || []).filter(e => state.selectedExtras.includes(e.id));
+  const key = cartLineKey(it.id, state.selectedExtras);
+  const existing = state.cart.find(c => c.key === key);
   let cart;
   if (existing) {
-    cart = state.cart.map(c => c.id === it.id ? { ...c, qty: c.qty + state.qty } : c);
+    cart = state.cart.map(c => c.key === key ? { ...c, qty: c.qty + state.qty } : c);
   } else {
-    cart = [...state.cart, { id: it.id, name: it.name, price: it.price, image: it.image, qty: state.qty }];
+    cart = [...state.cart, { key, id: it.id, name: it.name, price: it.price, image: it.image, extras: chosenExtras, qty: state.qty }];
   }
-  setState({ cart, screen: "restaurant", qty: 1 });
+  setState({ cart, screen: "restaurant", qty: 1, selectedExtras: [] });
 }
 
-function changeCartQty(id, delta){
+function changeCartQty(key, delta){
   const cart = state.cart
-    .map(c => c.id === id ? { ...c, qty: c.qty + delta } : c)
+    .map(c => c.key === key ? { ...c, qty: c.qty + delta } : c)
     .filter(c => c.qty > 0);
   setState({ cart });
 }
@@ -652,6 +687,8 @@ function restaurantHTML(r){
 }
 
 function itemHTML(item){
+  const hasExtras = item.extras && item.extras.length > 0;
+  const unitPrice = item.price + extrasTotal((item.extras||[]).filter(e => state.selectedExtras.includes(e.id)));
   return `
   <div style="display:flex;flex-direction:column;min-height:100vh;">
     <div class="hero-img-wrap" style="height:300px;">
@@ -666,6 +703,25 @@ function itemHTML(item){
       <div class="mono" style="font-size:22px;font-weight:800;color:var(--ember);margin-bottom:20px;">${money(item.price)}</div>
       <p style="font-size:15px;color:var(--muted);line-height:1.6;margin:0 0 32px;">${item.desc}</p>
 
+      ${hasExtras ? `
+      <div class="section">
+        <div class="title">Extras <span style="text-transform:none;font-weight:500;color:var(--muted);letter-spacing:0;">(optional)</span></div>
+        <div class="box" style="display:flex;flex-direction:column;padding:4px 16px;">
+          ${item.extras.map((e,i) => {
+            const checked = state.selectedExtras.includes(e.id);
+            return `
+            <button class="press" onclick="toggleExtra('${e.id}')" style="all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;cursor:pointer;width:100%;${i < item.extras.length-1 ? 'border-bottom:1px solid var(--line);' : ''}">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:22px;height:22px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid ${checked?'transparent':'var(--line)'};background:${checked?'var(--ember)':'transparent'};color:#fff;transition:background 0.15s;">${checked ? icon('check','currentColor',14) : ''}</span>
+                <span style="font-size:14px;font-weight:600;color:var(--ink);">${e.name}</span>
+              </div>
+              <span class="mono" style="font-size:13px;font-weight:700;color:var(--muted2);">+${money(e.price)}</span>
+            </button>`;
+          }).join("")}
+        </div>
+      </div>
+      ` : ""}
+
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--cream);border-radius:16px;box-shadow:var(--shadow);">
         <span style="font-size:15px;font-weight:700;color:var(--ink);">Quantity</span>
         <div style="display:flex;align-items:center;gap:20px;">
@@ -679,7 +735,7 @@ function itemHTML(item){
     <div class="stickybar">
       <button class="bigbtn solid press" onclick="addToCart()">
         <span>Add to order</span>
-        <span class="mono">${money(item.price * state.qty)}</span>
+        <span class="mono">${money(unitPrice * state.qty)}</span>
       </button>
     </div>
   </div>`;
@@ -707,15 +763,16 @@ function cartHTML(){
       <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:32px;">
         ${cart.map(c => `
           <div style="display:flex;gap:16px;align-items:center;background:var(--cream);border-radius:16px;padding:12px;box-shadow:var(--shadow);">
-            <img src="${c.image}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;" alt="${c.name}" />
+            <img src="${c.image}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;flex-shrink:0;" alt="${c.name}" />
             <div style="flex:1;">
               <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:4px;">${c.name}</div>
-              <div class="mono" style="font-size:14px;color:var(--ember);font-weight:700;">${money(c.price)}</div>
+              ${c.extras && c.extras.length ? `<div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:4px;line-height:1.5;">+ ${c.extras.map(e=>e.name).join(", ")}</div>` : ""}
+              <div class="mono" style="font-size:14px;color:var(--ember);font-weight:700;">${money(cartLineUnitPrice(c))}</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:6px;border-radius:24px;">
-              <button class="qtybtn press" style="width:28px;height:28px;border:none;" onclick="changeCartQty(${c.id},-1)">${icon('minus',null,14)}</button>
+              <button class="qtybtn press" style="width:28px;height:28px;border:none;" onclick="changeCartQty('${c.key}',-1)">${icon('minus',null,14)}</button>
               <span class="mono" style="font-size:14px;font-weight:700;min-width:14px;text-align:center;">${c.qty}</span>
-              <button class="qtybtn filled press" style="width:28px;height:28px;" onclick="changeCartQty(${c.id},1)">${icon('plus',null,14)}</button>
+              <button class="qtybtn filled press" style="width:28px;height:28px;" onclick="changeCartQty('${c.key}',1)">${icon('plus',null,14)}</button>
             </div>
           </div>
         `).join("")}

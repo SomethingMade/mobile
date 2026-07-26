@@ -337,6 +337,11 @@ const RESTAURANTS = [
 
 const money = n => `R${n.toFixed(2)}`;
 const ORDER_STEPS = ["Order confirmed", "Preparing your food", "Rider on the way", "Delivered"];
+const DISCOUNT_CODES = {
+  "EMBER10": { type: "percent", value: 10, label: "10% off your order" },
+  "WELCOME5": { type: "flat", value: 5, label: "R5.00 off your order" },
+  "FREESHIP": { type: "shipping", value: 0, label: "Free delivery" },
+};
 
 /* ---------------- icons ---------------- */
 const ICONS = {
@@ -375,6 +380,8 @@ let state = {
   address: { line: "7 Kestrel Lane, Unit 4", note: "Leave at the door" },
   editingAddress: false,
   notifications: { orderUpdates: true, promotions: false },
+  discountApplied: null,
+  discountError: "",
 };
 
 function setState(patch, opts){
@@ -391,6 +398,29 @@ function extrasTotal(extras){ return (extras||[]).reduce((s,e)=>s+e.price,0); }
 function cartLineUnitPrice(c){ return c.price + extrasTotal(c.extras); }
 function cartLineKey(itemId, extraIds){ return itemId + "|" + [...extraIds].sort().join(","); }
 function cartSubtotal(){ return state.cart.reduce((s,c)=>s+c.qty*cartLineUnitPrice(c),0); }
+
+function discountAmount(subtotal, delivery){
+  const d = state.discountApplied;
+  if (!d) return 0;
+  if (d.type === "percent") return subtotal * (d.value / 100);
+  if (d.type === "flat") return Math.min(d.value, subtotal);
+  if (d.type === "shipping") return delivery;
+  return 0;
+}
+
+function applyDiscountCode(){
+  const input = document.getElementById('discountCodeInput');
+  const raw = (input && input.value.trim()) || "";
+  if (!raw) { setState({ discountError: "Enter a code to apply." }); return; }
+  const code = raw.toUpperCase();
+  const match = DISCOUNT_CODES[code];
+  if (!match) { setState({ discountError: "That code isn't valid.", discountApplied: null }); return; }
+  setState({ discountApplied: { code, ...match }, discountError: "" });
+}
+
+function removeDiscountCode(){
+  setState({ discountApplied: null, discountError: "" });
+}
 
 /* ---------------- actions ---------------- */
 function goHome(){ setState({ screen: "home" }); }
@@ -444,6 +474,7 @@ function logOut(){
     searchQuery: "", activeCat: "all",
     address: { line: "7 Kestrel Lane, Unit 4", note: "Leave at the door" },
     notifications: { orderUpdates: true, promotions: false },
+    discountApplied: null, discountError: "",
   });
 }
 
@@ -471,11 +502,15 @@ function changeCartQty(key, delta){
 }
 
 function placeOrder(){
+  const subtotal = cartSubtotal();
+  const delivery = state.cart.length ? 2.5 : 0;
+  const discount = discountAmount(subtotal, delivery);
   const order = {
     id: Date.now(),
     date: new Date(),
     items: state.cart,
-    total: cartSubtotal() + (state.cart.length ? 2.5 : 0),
+    discountCode: state.discountApplied ? state.discountApplied.code : null,
+    total: subtotal + delivery - discount,
     status: 1, // steps 0 & 1 (confirmed, preparing) start out done
   };
   setState({
@@ -483,6 +518,8 @@ function placeOrder(){
     screen: "tracking",
     ordersPlaced: state.ordersPlaced + 1,
     orderHistory: [order, ...state.orderHistory],
+    discountApplied: null,
+    discountError: "",
   });
   window.scrollTo(0,0);
   setTimeout(() => advanceOrder(order.id), 6000);
@@ -796,7 +833,11 @@ function cartHTML(){
 }
 
 function checkoutHTML(){
-  const total = cartSubtotal() + (state.cart.length ? 2.5 : 0);
+  const subtotal = cartSubtotal();
+  const delivery = state.cart.length ? 2.5 : 0;
+  const discount = discountAmount(subtotal, delivery);
+  const total = subtotal + delivery - discount;
+  const applied = state.discountApplied;
   return `
   <div style="padding:24px 20px 100px;min-height:100%;position:relative;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
@@ -829,12 +870,51 @@ function checkoutHTML(){
     </div>
 
     <div class="section">
+      <div class="title">Discount Code <span style="text-transform:none;font-weight:500;color:var(--muted);letter-spacing:0;">(optional)</span></div>
+      <div class="box">
+        ${applied ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:40px;height:40px;border-radius:50%;background:#F0FDF4;display:flex;align-items:center;justify-content:center;color:var(--basil);flex-shrink:0;">
+                ${icon('check','currentColor',20)}
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--ink);">${applied.code}</div>
+                <div style="font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;">${applied.label}</div>
+              </div>
+            </div>
+            <button class="press" onclick="removeDiscountCode()" style="border:none;background:var(--bg);color:var(--muted2);font-weight:700;font-size:12px;padding:8px 14px;border-radius:20px;cursor:pointer;">Remove</button>
+          </div>
+        ` : `
+          <div style="display:flex;gap:10px;">
+            <input id="discountCodeInput" type="text" placeholder="Enter code" autocapitalize="characters"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();applyDiscountCode();}"
+              style="flex:1;min-width:0;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;font-family:inherit;color:var(--ink);background:var(--bg);text-transform:uppercase;" />
+            <button class="press" onclick="applyDiscountCode()" style="border:none;background:var(--ink);color:var(--cream);font-weight:700;font-size:14px;padding:0 20px;border-radius:12px;cursor:pointer;">Apply</button>
+          </div>
+          ${state.discountError ? `<div style="font-size:12px;color:#DC2626;font-weight:600;margin-top:8px;">${state.discountError}</div>` : ""}
+        `}
+      </div>
+    </div>
+
+    <div class="section">
       <div class="title">Estimated Delivery</div>
       <div class="box" style="display:flex;align-items:center;gap:16px;">
         <div style="width:40px;height:40px;border-radius:50%;background:#F0FDF4;display:flex;align-items:center;justify-content:center;color:var(--basil);">
           ${icon('clock', 'currentColor', 20)}
         </div>
         <span style="font-size:15px;font-weight:700;color:var(--ink);">25–35 minutes</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">Order Summary</div>
+      <div class="box" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--muted2);"><span>Subtotal</span><span class="mono">${money(subtotal)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--muted2);"><span>Delivery</span><span class="mono">${money(delivery)}</span></div>
+        ${applied ? `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--basil);"><span>Discount (${applied.code})</span><span class="mono">-${money(discount)}</span></div>` : ""}
+        <div style="border-top:1px dashed var(--line);margin:4px 0;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;color:var(--ink);"><span>Total</span><span class="mono">${money(total)}</span></div>
       </div>
     </div>
   </div>
